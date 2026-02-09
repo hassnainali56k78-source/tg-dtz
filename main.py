@@ -5,11 +5,13 @@ Telegram : https://t.me/DarkTechZone
 Purpose  : Educational & Research Use Only
 """
 
+from flask import Flask, request, jsonify
 import requests
 from bs4 import BeautifulSoup
 import time
 import re
-import json
+
+app = Flask(__name__)
 
 BASE_URL = "https://t.me/"
 HEADERS = {
@@ -90,29 +92,24 @@ def scrape(username):
         "scraped_at": int(time.time())
     }
 
-def handler(event, context):
-    query = event.get("queryStringParameters") or {}
-    username = query.get("username")
+@app.route("/", methods=["GET"])
+def index():
+    username = request.args.get("username")
 
     if not username:
-        return {
-            "statusCode": 400,
-            "headers": {"Content-Type": "application/json"},
-            "body": json.dumps({
-                "success": False,
-                "error": "username parameter required",
-                "branding": BRANDING
-            })
-        }
+        return jsonify({
+            "success": False,
+            "error": "username parameter required",
+            "branding": BRANDING
+        }), 400
 
     data = scrape(username.strip().lstrip("@"))
 
-    return {
-        "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
-        "body": json.dumps({
-            "success": "error" not in data,
-            "branding": BRANDING,
-            "result": data
-        }, ensure_ascii=False)
-    }
+    return jsonify({
+        "success": "error" not in data,
+        "branding": BRANDING,
+        "result": data
+    })
+
+# Vercel entry point
+app_handler = app
